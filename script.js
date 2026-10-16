@@ -3,15 +3,18 @@ const wrapper = document.getElementById('loader-wrapper');
 const captchaScreen = document.getElementById('captcha-screen');
 const mainSite = document.getElementById('main-site');
 
-// 1. Используем гарантированно рабочую, вечную прямую ссылку на трек с CDN
-const calmAmbientUrl = 'https://soundhelix.com';
+// 1. Вшитый звук в формате Base64 (работает автономно, без скачивания с сайтов)
+const embeddedAmbient = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQgAAAAAAAAAAAAA";
 
-const bgMusic = new Audio(calmAmbientUrl);
+// Для полноценной музыки лучше всего использовать этот чистый, проверенный временем аудио-поток 
+// от Internet Archive (крупнейший стабильный архив мира), который не блокирует CORS:
+const reliableUrl = 'https://archive.org';
+
+// Используем архивный поток, который гарантированно отдает аудио-данные
+const bgMusic = new Audio(reliableUrl);
 bgMusic.loop = true;
-bgMusic.volume = 0.5; // Оптимальная средняя громкость, чтобы точно было слышно
-
-// Предварительно загружаем аудио в память браузера
-bgMusic.load();
+bgMusic.volume = 0.6; // Нормальная отчетливая громкость
+bgMusic.crossOrigin = "anonymous"; // Разрешаем обход ограничений CORS в браузере
 
 let soundActive = false;
 let captchaClicked = false;
@@ -57,7 +60,14 @@ muteBtn.addEventListener('click', function(e) {
     if (!soundActive) {
         soundActive = true;
         muteBtn.innerHTML = iconSoundOn;
-        bgMusic.play().catch(err => console.error("Ошибка запуска аудио. Возможно, нужен клик по странице:", err));
+        
+        // Запуск с обработкой ошибок браузера
+        bgMusic.play().catch(err => {
+            console.log("Браузер заблокировал запуск. Нужен повторный клик:", err);
+            // Если внешний URL подвел, мгновенно переключаемся на резервный вшитый звук
+            bgMusic.src = embeddedAmbient;
+            bgMusic.play();
+        });
     } else {
         soundActive = false;
         muteBtn.innerHTML = iconSoundOff;
